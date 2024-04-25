@@ -39,13 +39,47 @@ public class Graph<T extends PointInterface> {
         this.nodes.add(point);
     }
 
+    public double evaluateMe() {
+        // double maxEdge = computeMaxDistanceToABase();
+        double maxEdge = 0.0;
+        double penalty = 90000;
+        if (maxEdge==0.0){
+            return penalty; // Works as a penalty
+        }
+
+        if (this.edges.size()==0){
+            return penalty;
+        } else {
+            if (!isConnected()) {
+                return penalty;
+            }
+        }
+
+        return maxEdge;
+    }
+
+    public double computeMaxDistanceToABase(HashSet<String> bases){
+
+        double maxDistance = 0.0;
+        double edgeDist = 0.0;
+        for(Edge edge : this.edges){
+            edgeDist = edge.distance();
+            if (edge.distance()>maxDistance){
+                if (bases.contains(edge.getStart().getId()) || bases.contains(edge.getEnd().getId())){
+                    maxDistance=edgeDist;
+                }
+                
+            }
+        }
+        return maxDistance;
+    }
     
     // Second cost function
     // Method to evaluate the graph based on connectivity and total distance
-    public double evaluateMe() {
+    public double evaluateMeConnectivityAndDistance() {
         double maxEdge = computeMaxEdgeDistance();
 
-        double penalty = 9000;
+        double penalty = 90000;
         if (maxEdge==0.0){
             return penalty; // Works as a penalty
         }

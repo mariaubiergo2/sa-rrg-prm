@@ -21,7 +21,7 @@ public class Etat <T extends PointInterface>{
     @SuppressWarnings("rawtypes")
     public Graph myGraph;
 
-    private static Random generateur=new Random(126);
+    
 
     
     // Constructor
@@ -157,22 +157,29 @@ public class Etat <T extends PointInterface>{
      * Generate voisin (Generate neighbor) N not changed. Random changed by its neighbor
      */
     public void genererVoisinOpt3(){
-		
-	    int position = generateur.nextInt(N);
+		// long startTime=System.nanoTime();
+	    int position = Manager.generateur.nextInt(N);
+        // long endTime=System.nanoTime();
+		// System.out.println("1. random position time : "+(endTime-startTime)+" s ");
+        
         
 	    Point2D changed = Manager.grid.getPointFromID(this.nodes.get(position).getId());
-
+        
         String voisin = changed.getRandomNeighbor();
+        
 
         // CHECK IF THERE IS ALREADY THIS NODE:
-        boolean keepLooking = true;
-        while (keepLooking){
-            if(itIsAlreadyNode(voisin)){
-                voisin = changed.getRandomNeighbor();
-            }
-            else{
-                keepLooking = false;
-            }
+        // boolean keepLooking = true;
+        // while (keepLooking){
+        //     if(itIsAlreadyNode(voisin)){
+        //         voisin = changed.getRandomNeighbor();
+        //     }
+        //     else{
+        //         keepLooking = false;
+        //     }
+        // }
+        while (itIsAlreadyNode(voisin)){
+            voisin = changed.getRandomNeighbor();
         }
 
         Graph bufferGraph = myGraph.copy();
@@ -195,7 +202,7 @@ public class Etat <T extends PointInterface>{
     
     public void genererVoisinOpt4(){
 
-        int position = generateur.nextInt(N);
+        int position = Manager.generateur.nextInt(N);
 
         Point2D newRandom = Manager.grid.randomPoint();
         while (!Manager.grid.isAvailable(newRandom)){

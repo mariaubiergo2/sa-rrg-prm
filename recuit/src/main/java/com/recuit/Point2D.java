@@ -75,8 +75,8 @@ public class Point2D implements PointInterface {
     @Override
     public String getRandomNeighbor(){
 		String[] neighborArray = this.freeNeighbors.toArray(new String[0]);
-		Random random = new Random();
-		int randomIndex = random.nextInt(neighborArray.length);
+		
+		int randomIndex = Manager.random.nextInt(neighborArray.length);
 		
 		return neighborArray[randomIndex];
 	}

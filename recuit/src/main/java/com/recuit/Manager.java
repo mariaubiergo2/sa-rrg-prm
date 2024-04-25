@@ -1,9 +1,19 @@
 package com.recuit;
 
+import java.util.Random;
+
 public class Manager {
 
     // Static grid
     public static Grid grid;
+
+    // For all the Etats
+    public static Random generateur;
+
+    // For getting a random neighbor
+    public static Random random;
+
+    
 
     /**
      * Pre-processing method.
@@ -14,6 +24,10 @@ public class Manager {
         String nomFicSamples = "src/DATA/" + nomGen + ".txt";
 
         grid = new Grid(nomFicSamples);
+
+        generateur = new Random(126);
+
+        random = new Random();
 
     }
 

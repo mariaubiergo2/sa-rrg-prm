@@ -182,14 +182,30 @@ public class Recuit {
 			ratioTemperature=T/Tinit;
 		
 			for (int i=0; i < nbTransitions; i++){
-				
+				// long startTime=System.nanoTime();
+
 				Etat.copy(xi,xj);
 
+				// long endTime=System.nanoTime();
+		
+				// System.out.println(RED+"COPY time : "+(endTime-startTime)+" s "+RESET);
+
+				// long startTime=System.nanoTime();
 				xj.genererVoisinOpt3();
 
+				// long endTime=System.nanoTime();
+		
+				// System.out.println(RED+"Voisin time : "+(endTime-startTime)+" s "+RESET);
+
+				// startTime=System.nanoTime();
 				yj=xj.calculCritere(ratioTemperature);
+				// endTime=System.nanoTime();
+				// System.out.println(RED+"Calcule teria time : "+(endTime-startTime)+" s "+RESET);
+
+				
 
 				// Call the function you want to measure
+				// long startTime4=System.nanoTime();
 				if (accept(yi,yj,T, minimisation, ratioTemperature)){
 					
 					yi=yj;
@@ -197,6 +213,11 @@ public class Recuit {
 					Etat.copy(xj,xi);
 
 				}
+
+				// long endTime4=System.nanoTime();
+		
+				// System.out.println(RED+"Acceptance time : "+(endTime4-startTime4)+" s "+RESET);
+
 				
 			}
 			T=T*alpha;
@@ -273,11 +294,12 @@ public class Recuit {
 		
 		// Main loop to find the solution
 		System.out.println("COOLING LOOP START ... "+RESET);
-		
+		// System.console().profile();
+
 		monRecuit.coolingLoop(temperature);
 		
 		System.out.println(RED+"COOLING LOOP END ...");
-
+		
 		// Just for accounting how much time it takes to simulate
 		long endTime=System.currentTimeMillis();
 		
