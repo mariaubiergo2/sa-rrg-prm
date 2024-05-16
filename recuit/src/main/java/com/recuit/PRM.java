@@ -21,15 +21,16 @@ public class PRM<T extends PointInterface> {
     public static <T extends PointInterface> Graph<T> createGraph(List<T> nodes, SpaceInterface<T> space, double alpha) {
         
         // Set only the first time
-        alpha = 1.1;
+        alpha = 1.1; // ONLY > THAN 1
         n = nodes.size();
-        radius = (Math.pow(Math.log(n) / n, 1 / 2.) * 2 * Math.pow(1 + 1 / 2., 1 / 2.) * alpha * Math.pow(space.lebesgueMeasure() / space.unitBall(), 1 / 2.))/2;
+        radius = (Math.pow(Math.log(n) / n, 1 / 2.) * 2 * Math.pow(1 + 1 / 2., 1 / 2.) * alpha * Math.pow(space.lebesgueMeasure() / space.unitBall(), 1 / 2.))/1;
         
         List<Edge> edges = new ArrayList<>();
         for (T point : nodes) {
             List<T> nearPoints = near(point, nodes);
             for (T point2 : nearPoints) {
                 // edges.add(new Edge(point2, point));
+                // if (space.areConnectable(point2, point)) {
                 if (space.areConnectable(point2, point)) {
                     // edges.add(new Edge(point, point2));
                     edges.add(new Edge(point2, point));
@@ -42,17 +43,11 @@ public class PRM<T extends PointInterface> {
 
 
     public static <T extends PointInterface> Graph<T> createGraphFromGraph(Graph<T> inputGraph, T newNode, T oldNode, SpaceInterface<T> space, int poisitionChanged) {
-    // REVISED
-
-        
-        // System.out.println("-initial-");
-        // System.out.println(inputGraph.printEdgesAndNodes());
-        
+    
         Graph oldGraph = inputGraph.copyNodes();
 
         oldGraph.nodes.set(poisitionChanged, newNode);
 
-       
         for (Object edge : inputGraph.edges){
             if (((Edge) edge).connects(oldNode)){
                 
@@ -65,7 +60,14 @@ public class PRM<T extends PointInterface> {
         List<T> nearPoints = near(newNode, oldGraph.nodes);
 
         for (T point : nearPoints) {
-            if (space.areConnectable(point, newNode)) {
+            // if (space.areConnectableMongoDB(point, newNode)) {
+            long endTime=System.nanoTime();
+		
+            boolean res = space.areConnectable(point, newNode);
+            
+            long startTime=System.nanoTime();
+            System.out.println("connectable time : "+(endTime-startTime)/1000+" ms ");
+            if (res) {
                 Edge newEdge = new Edge(point, newNode);
                 // if (!oldGraph.doesEdgeExist(newEdge)){
                     oldGraph.edges.add(newEdge);
@@ -76,6 +78,7 @@ public class PRM<T extends PointInterface> {
 
         return oldGraph;
     }
+
 
 
     public static <T extends PointInterface> List<T> near(T point, List<T> nodes) {

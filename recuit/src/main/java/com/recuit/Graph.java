@@ -1,15 +1,19 @@
 package com.recuit;
 
 import java.util.*;
+
+import org.bson.Document;
+
+import com.mongodb.client.model.Filters;
+import com.recuit.edgesInformation.MongoDBConnection;
 import com.recuit.interfaces.PointInterface;
 
-// Represents a graph composed of nodes and edges
 public class Graph<T extends PointInterface> {
     
     List<T> nodes; // List of nodes in the graph
     List<Edge> edges; // List of edges in the graph
 
-    // Constructor to initialize an empty graph
+    
     public Graph() {
         this.nodes = new ArrayList<>();
         this.edges = new ArrayList<>();
@@ -21,12 +25,12 @@ public class Graph<T extends PointInterface> {
         this.edges = edges;
     }
 
-    // Method to get the list of edges in the graph
+
     public List<Edge> getEdges() {
         return this.edges;
     }
 
-    // Method to print information about the graph
+    
     public String printGraph() {
         String buffer = "";
         buffer = buffer + "Nnodes= " + nodes.size();
@@ -39,10 +43,14 @@ public class Graph<T extends PointInterface> {
         this.nodes.add(point);
     }
 
+    // *************************************************************************
+    // COST FUNCTIONS
+    // *************************************************************************
+
     public double evaluateMe() {
-        // double maxEdge = computeMaxDistanceToABase();
-        double maxEdge = 0.0;
-        double penalty = 90000;
+        double maxEdge = computeMaxDistanceToABase(Manager.basesDictionary);
+        
+        double penalty = Recuit.PENALTY;
         if (maxEdge==0.0){
             return penalty; // Works as a penalty
         }
@@ -64,7 +72,7 @@ public class Graph<T extends PointInterface> {
         double edgeDist = 0.0;
         for(Edge edge : this.edges){
             edgeDist = edge.distance();
-            if (edge.distance()>maxDistance){
+            if (edgeDist>maxDistance){
                 if (bases.contains(edge.getStart().getId()) || bases.contains(edge.getEnd().getId())){
                     maxDistance=edgeDist;
                 }
@@ -76,10 +84,10 @@ public class Graph<T extends PointInterface> {
     
     // Second cost function
     // Method to evaluate the graph based on connectivity and total distance
-    public double evaluateMeConnectivityAndDistance() {
+    public double evaluateMeConnectivityAndMaxDistance() {
         double maxEdge = computeMaxEdgeDistance();
 
-        double penalty = 90000;
+        double penalty = Recuit.PENALTY;
         if (maxEdge==0.0){
             return penalty; // Works as a penalty
         }
@@ -95,6 +103,30 @@ public class Graph<T extends PointInterface> {
         return maxEdge;
     }
 
+    public double evaluateMeConnectivityAndIntersections(){ 
+        
+        double penalty = Recuit.PENALTY;
+        
+
+        if (this.edges.size()==0){
+            return penalty;
+        } else {
+            
+            if (!isConnected()) {
+                return penalty;
+            }
+            
+
+			
+            else {
+                return (countEdgeIntersections()+computeMaxEdgeDistance());
+            }
+            
+
+        }
+
+    }
+
     public double computeMaxEdgeDistance(){
         double maxDistance = 0.0;
         for(Edge edge : this.edges){
@@ -107,7 +139,8 @@ public class Graph<T extends PointInterface> {
     
     // First cost function
     // Method to evaluate the graph based on connectivity and total distance
-    public double evaluateMeCF1() {
+    public double evaluateMeConnectivityAndTotalDistance() {
+
         double penalty = 0.0;
         if (!isConnected()) {
             penalty = 1.0;
@@ -132,8 +165,11 @@ public class Graph<T extends PointInterface> {
         return totalDistance;
     }
 
+
+
     // Method to check if the graph is connected
     private boolean isConnected() {
+
         if (this.edges.size()==0) {
             // If there are no nodes, the graph is considered connected
             // But! we penalize that there are no nodes
@@ -178,7 +214,115 @@ public class Graph<T extends PointInterface> {
         }
     }
 
-    // Method to delete duplicate edges from the graph
+
+    public int countEdgeIntersections() {
+        int intersectionCount = 0;
+
+        // Iterate over each pair of edges
+        for (int i = 0; i < edges.size(); i++) {
+            for (int j = i + 1; j < edges.size(); j++) {
+                Edge edge1 = edges.get(i);
+                Edge edge2 = edges.get(j);
+
+                // Check if the two edges intersect
+                if (doEdgesIntersect(edge1, edge2)) {
+                    intersectionCount++;
+                }
+            }
+        }
+
+        return intersectionCount;
+    }
+
+
+    private boolean doEdgesIntersect(Edge e1, Edge e2) {
+        PointInterface p1 = e1.getStart();
+        PointInterface p2 = e1.getEnd();
+        PointInterface q1 = e2.getStart();
+        PointInterface q2 = e2.getEnd();
+
+        if (p1.getId().equals(q1.getId())||p1.getId().equals(q2.getId())||p2.getId().equals(q1.getId())||p2.getId().equals(q2.getId())){
+            return false;
+        }
+        // Extract coordinates of the points
+        int[] p1Coords = p1.getCoordinates();
+        int[] p2Coords = p2.getCoordinates();
+        int[] q1Coords = q1.getCoordinates();
+        int[] q2Coords = q2.getCoordinates();
+
+        
+    
+        // Coordinates of points
+        int p1x = p1Coords[0];
+        int p1y = p1Coords[1];
+        int p2x = p2Coords[0];
+        int p2y = p2Coords[1];
+        int q1x = q1Coords[0];
+        int q1y = q1Coords[1];
+        int q2x = q2Coords[0];
+        int q2y = q2Coords[1];
+    
+        // Determine orientations using cross product
+        int o1 = orientation(p1x, p1y, p2x, p2y, q1x, q1y);
+        int o2 = orientation(p1x, p1y, p2x, p2y, q2x, q2y);
+        int o3 = orientation(q1x, q1y, q2x, q2y, p1x, p1y);
+        int o4 = orientation(q1x, q1y, q2x, q2y, p2x, p2y);
+    
+        // General case
+        if (o1 != o2 && o3 != o4) {
+            return true;
+        }
+    
+        // Special cases
+        // p1, p2, q1 are collinear and q1 lies on p1p2
+        if (o1 == 0 && onSegment(p1x, p1y, q1x, q1y, p2x, p2y)) {
+            return true;
+        }
+    
+        // p1, p2, q2 are collinear and q2 lies on p1p2
+        if (o2 == 0 && onSegment(p1x, p1y, q2x, q2y, p2x, p2y)) {
+            return true;
+        }
+    
+        // q1, q2, p1 are collinear and p1 lies on q1q2
+        if (o3 == 0 && onSegment(q1x, q1y, p1x, p1y, q2x, q2y)) {
+            return true;
+        }
+    
+        // q1, q2, p2 are collinear and p2 lies on q1q2
+        if (o4 == 0 && onSegment(q1x, q1y, p2x, p2y, q2x, q2y)) {
+            return true;
+        }
+    
+        // No intersection
+        return false;
+    }
+    
+    // Helper function to calculate orientation
+    private int orientation(int p1x, int p1y, int p2x, int p2y, int qx, int qy) {
+        int val = (qy - p1y) * (p2x - p1x) - (qx - p1x) * (p2y - p1y);
+        if (val == 0) {
+            return 0; // Collinear
+        } else if (val > 0) {
+            return 1; // Clockwise
+        } else {
+            return -1; // Counterclockwise
+        }
+    }
+    
+    // Helper function to check if point q lies on line segment p-r
+    private boolean onSegment(int px, int py, int qx, int qy, int rx, int ry) {
+        if (qx <= Math.max(px, rx) && qx >= Math.min(px, rx) &&
+            qy <= Math.max(py, ry) && qy >= Math.min(py, ry)) {
+            return true;
+        }
+        return false;
+    }
+    
+
+
+
+    // UNUSED
     public void deleteDuplicateEdges() {
         List<Edge> uniqueEdges = new ArrayList<>();
         for (Edge edge : edges) {
@@ -196,7 +340,7 @@ public class Graph<T extends PointInterface> {
         edges = uniqueEdges;
     }
 
-
+    // UNUSED
     boolean doesNodeExists(String voisin) {
         int i = 0;
         while(i<nodes.size()){
@@ -209,6 +353,7 @@ public class Graph<T extends PointInterface> {
     }
 
 
+    // UNUSED
     public boolean doesEdgeExist(Edge input) {
         for (Edge edge : edges) {
             if (edge.isReverseOf(input) || edge.isSameAs(input)) {
@@ -217,8 +362,6 @@ public class Graph<T extends PointInterface> {
         }
         return false;
     }
-
-
 
 
     public String printEdgesAndNodes(){

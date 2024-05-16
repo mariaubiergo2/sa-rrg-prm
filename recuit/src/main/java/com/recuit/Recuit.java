@@ -1,10 +1,18 @@
 package com.recuit;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.swing.WindowConstants;
 
+import com.recuit.edgesInformation.MongoDBConnection;
+import com.recuit.interfaces.PointInterface;
 
-public class Recuit {
+
+public class Recuit <T extends PointInterface>{
     
     // Random value used for acceptance probability
     private static Random generateur = new Random(123);
@@ -14,15 +22,18 @@ public class Recuit {
     private static final double alpha = 0.999;
     private static final boolean minimisation = true;
     private static String nomGen = "matrixBigObstacles"; // name of the DATA file CHANGED
-											 // Is reading the matrix as an input
+											// Is reading the matrix as an input
 
     // Dimension of the problem
-    private static int DIMENSION = 	50; // Number of nodes!!!!! NOW
+    private static int DIMENSION = 	10; // Number of nodes!!!!! NOW
     private Etat xi, xj;
     private static double temperature = 0.01;
+	public static int PENALTY = 9000;
     
 	// Matrix stuff
 	private static int neighborRadius = 2;
+
+	public List<Point2D> basesList;
 
 	// Plotting stuff
 	public static String RESET = "\u001B[0m";
@@ -38,6 +49,18 @@ public class Recuit {
 	public Recuit() {
 		xi = new Etat();
 		xj = new Etat();
+
+		basesList = new ArrayList<>();
+		Point2D point1 = new Point2D(5, 5);
+		Point2D point2 = new Point2D(95, 95);
+		Point2D point3 = new Point2D(5, 95);
+		Point2D point4 = new Point2D(95, 5);
+		basesList.add(point1);
+		basesList.add(point2);
+		basesList.add(point3);
+		basesList.add(point4);
+
+		Manager.setBases(basesList);
 	}
 
 
@@ -46,22 +69,16 @@ public class Recuit {
 				
 		Manager.initializeGrid(nomGen);
 		Manager.setNeighborsGrid(neighborRadius);
-		
+		Manager.setConstants();
+
+		MongoDBConnection.generateMongoDBConnection("mongodb://localhost:27017", "con"); 
+
 	}
-
-    private static void closeFiles(){
-		// Close files
-
-		// pwRes.close();
-    }
 
 	
     public void postProcessing(String nomGen){
-		// Etat.postProcessing(nomGen);
-
 		xi.saveEtat(nomGen);
 
-		closeFiles();
     }
 
 
@@ -158,13 +175,10 @@ public class Recuit {
     }
 
     // Cooling
-    @SuppressWarnings("unchecked")
 	public void coolingLoop(double Tinit) {
-		//HeatUp heat = new HeatUp();		
 		double yi=0.0,yj=0.0;
-		// double proba;
+		
 		double T=Tinit;
-		// Etat buffer;
 
 		Etat bestEtat = new Etat<>();
 		
@@ -172,11 +186,11 @@ public class Recuit {
 		double ratioTemperature = 0.5;
 	    
 		// Generate a first random estate
-	    xi.initAleatEtatDefiningN(DIMENSION);
+	    // xi.initAleatEtatDefiningNandBases(DIMENSION, basesList);
+		xi.initAleatEtatDefiningN(DIMENSION);
 		yi = xi.calculCritere(ratioTemperature);
 
 		Etat.copy(xi, bestEtat);
-
 
 	    do {
 			ratioTemperature=T/Tinit;
@@ -191,6 +205,7 @@ public class Recuit {
 				// System.out.println(RED+"COPY time : "+(endTime-startTime)+" s "+RESET);
 
 				// long startTime=System.nanoTime();
+				// xj.genererVoisinOpt3WithBases();
 				xj.genererVoisinOpt3();
 
 				// long endTime=System.nanoTime();
@@ -227,16 +242,16 @@ public class Recuit {
 				System.out.println("**********BEST ETAT***********");
 				System.out.println("T= " + T + " Tinitial= " + Tinit + " valeur critere " + xi.objective);
 				System.out.println(xi.printEtat());
+				
+				this.postProcessing(nomGen.concat("BEST"));
 			}
 
-			//pwRes.println(" " + yi + " "+ xi.objS1+ " " + xi.objS2);
 	    } while(T>0.0001*Tinit);
 
 		xi.calculCritere(ratioTemperature);
 
 		System.out.println(PURPLE+"**************************************************");
 		System.out.println("T= " + T + " Tinitial= " + Tinit + " valeur critere " + yi+RESET);
-		System.out.println(xi.printEtat());
 		System.out.println(YELLOW+"Final Etat: "+RESET);
 		System.out.println(xi.printEtat());
 
@@ -245,25 +260,30 @@ public class Recuit {
 
 	
 	public void plotResults(String title){
-		
 		this.example = new PlotGraph(title);
         this.example.setSize(800, 600);
         this.example.setLocationRelativeTo(null);
         this.example.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.example.setVisible(true);
-        
-        // TimerTask task = new TimerTask() {
-        // public void run() {
-        //     example.setVisible(false);
-		// 	// example.dispose();
-        // }
-        // };
-        // Timer timer = new Timer("Timer");
-        
-        // long delay = 3000;
-        // timer.schedule(task, delay);
-
 	}
+
+
+	public void plotResultsTimer(String title, int miliSeconds){
+		
+		plotResults(title);
+        
+        TimerTask task = new TimerTask() {
+			public void run() {
+				example.setVisible(false);
+				// example.dispose();
+			}
+        };
+        Timer timer = new Timer("Timer");
+        
+        long delay = miliSeconds; //set 3000
+        timer.schedule(task, delay);
+	}
+
 
 
 

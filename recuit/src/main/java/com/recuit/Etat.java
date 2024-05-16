@@ -42,44 +42,52 @@ public class Etat <T extends PointInterface>{
 		System.out.println(Recuit.YELLOW+"New random state contains nodes: "+count+Recuit.RESET);
     }
 
-    public void initAleatEtat(){
+    // Process of initalizing variables done once we have an N
+    public void initializeEtatGivenN(){
 
-		// Set a random number of points
-		this.N = (int) ((Math.random()*(Nmax-Nmin) + Nmin));;
         this.nodes = new ArrayList<Point2D>();
-		
 		Point2D randomPoint;
 		int count = 0;
 		while (count<this.N){
 			randomPoint = Manager.grid.randomFreePoint();
             this.nodes.add(randomPoint);
-
 			count++;
 		}
 
         this.myGraph = PRM.createGraph(this.nodes, Manager.grid, 1.1);
+    }
+
+    // Set an Etat with a random number of points between Nmin and Nmax
+    public void initAleatEtat(){
+		
+		this.N = (int) ((Math.random()*(Nmax-Nmin) + Nmin));
+        this.initializeEtatGivenN();
         
     }
 
+    // Set an Etat with N nodes
     public void initAleatEtatDefiningN(int N){
 
-		// Set a random number of points
 		this.N = N;
-        this.nodes = new ArrayList<Point2D>();
-		
+        this.initializeEtatGivenN();
+    }
+
+    // Set an Etat with N nodes and several Bases already defined
+    public void initAleatEtatDefiningNandBases(int DIMENSION, List<Point2D> basesList) {
+        this.N = DIMENSION;
+
+        this.nodes = new ArrayList<Point2D>(basesList);
 		Point2D randomPoint;
-		int count = 0;
+		int count = basesList.size();
 		while (count<this.N){
 			randomPoint = Manager.grid.randomFreePoint();
             this.nodes.add(randomPoint);
-
 			count++;
 		}
 
         this.myGraph = PRM.createGraph(this.nodes, Manager.grid, 1.1);
-        
-    }
 
+    }
 
 
     /**
@@ -88,7 +96,6 @@ public class Etat <T extends PointInterface>{
     @SuppressWarnings("unchecked")
     public static void copy(Etat in, Etat out){
         
-		// Set a random number of points
 		out.N = in.N;
         out.nodes = new ArrayList<Point2D>();
         
@@ -100,7 +107,6 @@ public class Etat <T extends PointInterface>{
 			
 			count++;
 		}
-
         
 		out.objective=in.objective;
 
@@ -159,25 +165,33 @@ public class Etat <T extends PointInterface>{
     public void genererVoisinOpt3(){
 		// long startTime=System.nanoTime();
 	    int position = Manager.generateur.nextInt(N);
-        // long endTime=System.nanoTime();
-		// System.out.println("1. random position time : "+(endTime-startTime)+" s ");
+        
+	    Point2D changed = Manager.grid.getPointFromID(this.nodes.get(position).getId());
+        
+        String voisin = changed.getRandomNeighbor();
+        
+        int count = 0;
+        while (itIsAlreadyNode(voisin)){
+            voisin = changed.getRandomNeighbor();
+            count++;
+            if (count>8){
+                break;
+            }
+        }
+
+        Graph bufferGraph = myGraph.copy();
+        myGraph = PRM.createGraphFromGraph(bufferGraph, Manager.grid.getPointFromID(voisin), changed, Manager.grid, position);
+        this.nodes.set(position, Manager.grid.getPointFromID(voisin));
+    }
+
+    public void genererVoisinOpt3WithBases() {
+	    int position = (int) ((Math.random()*(this.N-Manager.nBases) + Manager.nBases));
         
         
 	    Point2D changed = Manager.grid.getPointFromID(this.nodes.get(position).getId());
         
         String voisin = changed.getRandomNeighbor();
         
-
-        // CHECK IF THERE IS ALREADY THIS NODE:
-        // boolean keepLooking = true;
-        // while (keepLooking){
-        //     if(itIsAlreadyNode(voisin)){
-        //         voisin = changed.getRandomNeighbor();
-        //     }
-        //     else{
-        //         keepLooking = false;
-        //     }
-        // }
         while (itIsAlreadyNode(voisin)){
             voisin = changed.getRandomNeighbor();
         }
@@ -244,16 +258,16 @@ public class Etat <T extends PointInterface>{
             PrintWriter fileOutput = new PrintWriter(file);
             fileOutput.print(" "+ objective +" = objective"+"\n");
 
-            List<Edge> edges = myGraph.getEdges();
-            for (int i=0;i<edges.size();i++)
-            {
-                fileOutput.print(edges.get(i).printEdge() + "\n");
-            }
-            
             List<Point2D> nodes = myGraph.nodes;
             for (int i=0;i<nodes.size();i++)
             {
                 fileOutput.print(nodes.get(i).getId() + "\n");
+            }
+
+            List<Edge> edges = myGraph.getEdges();
+            for (int i=0;i<edges.size();i++)
+            {
+                fileOutput.print(edges.get(i).printEdge() + "\n");
             }
 
             fileOutput.close();
@@ -276,7 +290,7 @@ public class Etat <T extends PointInterface>{
          * 2. compute cost function from that graph
          */
 
-        objective = myGraph.evaluateMe();
+        objective = myGraph.evaluateMeConnectivityAndIntersections();
 
         return objective;
     }

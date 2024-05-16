@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "SpaceRecognition",
+            "request": "launch",
+            "mainClass": "com.recuit.spaceRecognition.SpaceRecognition",
+            "projectName": "recuit"
+        },
+        {
+            "type": "java",
+            "name": "MongoClientConnectionExample",
+            "request": "launch",
+            "mainClass": "com.recuit.edgesInformation.MongoClientConnectionExample",
+            "projectName": "recuit"
+        },
+        {
+            "type": "java",
+            "name": "MongoClientConnectionExample",
+            "request": "launch",
+            "mainClass": "com.recuit.MongoClientConnectionExample",
+            "projectName": "recuit"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "PlotGraph",
+            "request": "launch",
+            "mainClass": "com.recuit.PlotGraph",
+            "projectName": "recuit"
+        },
+        {
+            "type": "java",
+            "name": "Recuit",
+            "request": "launch",
+            "mainClass": "com.recuit.Recuit",
+            "projectName": "recuit"
+        }
+    ]
+}

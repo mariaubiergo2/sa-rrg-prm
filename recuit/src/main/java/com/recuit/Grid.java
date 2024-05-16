@@ -9,6 +9,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 
+import org.bson.Document;
+
+import com.mongodb.client.model.Filters;
+import com.recuit.edgesInformation.MongoDBConnection;
 import com.recuit.interfaces.SpaceInterface;
 
 public class Grid implements SpaceInterface<Point2D> {
@@ -85,6 +89,15 @@ public class Grid implements SpaceInterface<Point2D> {
 	}
 
 
+	public int getRows(){
+		return this.rows;
+	}
+
+	
+	public int getColumns(){
+		return this.columns;
+	}
+
     // Getter
 	public HashMap<String, Point2D> getFreePoints() {
 		return this.freePoints;
@@ -106,8 +119,40 @@ public class Grid implements SpaceInterface<Point2D> {
         return Math.PI;
     }
 
+
+	
+	@Override
+    public boolean areConnectableMongoDB(Point2D p1, Point2D p2){
+
+		Edge edge = new Edge(p1, p2);
+
+        Document doc = MongoDBConnection.collection.find(Filters.eq("identification", edge.getStart().getId()+" "+edge.getEnd().getId())).first();
+        if (doc != null) {
+            return doc.getBoolean("available");
+            // System.out.println("_id: " + doc.getObjectId("_id")
+            //     + ", name: " + doc.getString("name")
+            //     + ", dateOfDeath: " + doc.getDate("dateOfDeath"));
+            }
+        else{
+            Document docReversed = MongoDBConnection.collection.find(Filters.eq("identification", edge.getEnd().getId()+" "+edge.getStart().getId())).first();
+            if (docReversed != null) {
+                return docReversed.getBoolean("available");
+                
+            } else {
+                boolean state = areConnectable((Point2D) edge.getEnd(), (Point2D) edge.getStart());
+                Document newDoc = MongoDBConnection.generateDocument(edge, state);
+				MongoDBConnection.uploadDocument(newDoc);
+                return state;
+            }
+                
+        }
+    }
+
+
     @Override
     public boolean areConnectable(Point2D p1, Point2D p2) {
+
+		// return true;
 
         List<Point2D> listCoordinate = new ArrayList<Point2D>();
 		int x, y;
@@ -171,7 +216,7 @@ public class Grid implements SpaceInterface<Point2D> {
             listCoordinate.add(new Point2D(y, x));
         }
         for(Point2D coordinate : listCoordinate) {
-        	if(!isAvailable(coordinate)) { //CHANGED WITH A !
+        	if(!isAvailableInteger(coordinate)) { //CHANGED WITH A !
         		return false; 
         	}
         }
@@ -223,6 +268,12 @@ public class Grid implements SpaceInterface<Point2D> {
     public boolean isAvailable(Point2D p) {
         
         return this.freePoints.containsKey(p.getId());
+        
+    }
+
+	public boolean isAvailableInteger(Point2D p) {
+        
+        return this.freePoints.containsKey((Math.round(p.getX()))+" "+Math.round(p.getY()));
         
     }
 

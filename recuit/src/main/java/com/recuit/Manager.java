@@ -1,8 +1,12 @@
 package com.recuit;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 
-public class Manager {
+import com.recuit.interfaces.PointInterface;
+
+public class Manager <T extends PointInterface>{
 
     // Static grid
     public static Grid grid;
@@ -13,7 +17,10 @@ public class Manager {
     // For getting a random neighbor
     public static Random random;
 
-    
+    public static HashSet<String> basesDictionary;
+
+    public static int nBases;
+
 
     /**
      * Pre-processing method.
@@ -24,14 +31,26 @@ public class Manager {
         String nomFicSamples = "src/DATA/" + nomGen + ".txt";
 
         grid = new Grid(nomFicSamples);
-
-        generateur = new Random(126);
-
-        random = new Random();
-
     }
 
 	public static void setNeighborsGrid(int radius){
 		grid.setPointsNeighbors(radius);
 	}
+
+    public static void setConstants(){
+        generateur = new Random(126);
+
+        random = new Random();
+    }
+
+    public static void setBases(List<Point2D> basesList){
+        nBases = basesList.size();
+
+        basesDictionary = new HashSet<String>();
+
+        for (Point2D base : basesList){
+            basesDictionary.add(base.getId());
+        }
+    }
+
 }
